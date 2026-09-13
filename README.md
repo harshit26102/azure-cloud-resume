@@ -1,92 +1,94 @@
 # Azure Cloud Resume Challenge ☁️
 
-A serverless resume website built on Microsoft Azure with a real-time visitor counter.
+[![CI/CD](https://github.com/harshit26102/azure-cloud-resume/actions/workflows/main_rg-resume.yml/badge.svg)](https://github.com/harshit26102/azure-cloud-resume/actions/workflows/main_rg-resume.yml)
+
+A serverless resume website built on Microsoft Azure with a visitor counter, API Management, Azure Functions, Cosmos DB, Managed Identity, Application Insights, and GitHub Actions CI/CD.
 
 🌐 **Live Demo:** https://rgresume.z29.web.core.windows.net/
 
+📦 **GitHub:** https://github.com/harshit26102/azure-cloud-resume
+
 ---
 
-## 🚀 Project Overview
+## 📌 Project Overview
 
 This project is my implementation of the Cloud Resume Challenge using Microsoft Azure.
 
-The website hosts my resume as a static website and uses a serverless backend to track the number of visitors. The backend is secured using Azure Managed Identity and Cosmos DB role-based access rather than storing a database key in the application code.
+The frontend is hosted as an Azure Storage Static Website. A JavaScript client calls an API exposed through Azure API Management. The API invokes an Azure Function, which updates a visitor counter stored in Azure Cosmos DB for NoSQL.
 
-The project was built and deployed hands-on using the Azure Portal, Azure Functions Core Tools, Azure CLI, JavaScript, and Git/GitHub.
+The Function App uses a **System-Assigned Managed Identity** and a **Cosmos DB built-in data-plane role** instead of storing a Cosmos DB key in application code.
+
+The backend is automatically built and deployed through **GitHub Actions CI/CD** whenever changes are pushed to the `main` branch.
 
 ---
 
 ## 🏗️ Architecture
 
 ```text
-                    ┌──────────────────────┐
-                    │       Visitor        │
-                    └──────────┬───────────┘
-                               │
-                               ▼
-                 ┌─────────────────────────┐
-                 │ Azure Storage Static     │
-                 │ Website                 │
-                 │ HTML / CSS / JavaScript │
-                 └───────────┬─────────────┘
-                             │
-                         HTTPS API
-                             │
-                             ▼
-                 ┌─────────────────────────┐
-                 │ Azure API Management    │
-                 └───────────┬─────────────┘
-                             │
-                             ▼
-                 ┌─────────────────────────┐
-                 │ Azure Functions         │
-                 │ visitorCounter          │
-                 │ HTTP Trigger            │
-                 └───────────┬─────────────┘
-                             │
-                  Managed Identity / RBAC
-                             │
-                             ▼
-                 ┌─────────────────────────┐
-                 │ Azure Cosmos DB         │
-                 │ ResumeDB / Visitors     │
-                 └─────────────────────────┘
-
                          ┌──────────────────┐
-                         │ Application      │
-                         │ Insights         │
-                         │ Monitoring       │
-                         └────────▲─────────┘
+                         │     Visitor      │
+                         └────────┬─────────┘
                                   │
-                              Telemetry
-                                  │
-                              Function
+                                  ▼
+                    ┌──────────────────────────┐
+                    │ Azure Storage Static      │
+                    │ Website                  │
+                    │ HTML / CSS / JavaScript  │
+                    └────────────┬─────────────┘
+                                 │
+                              HTTPS
+                                 │
+                                 ▼
+                    ┌──────────────────────────┐
+                    │ Azure API Management     │
+                    │ Visitor Counter API      │
+                    └────────────┬─────────────┘
+                                 │
+                                 ▼
+                    ┌──────────────────────────┐
+                    │ Azure Functions           │
+                    │ visitorCounter            │
+                    │ HTTP Trigger              │
+                    └────────────┬─────────────┘
+                                 │
+                         Managed Identity
+                                 │
+                                 ▼
+                    ┌──────────────────────────┐
+                    │ Azure Cosmos DB           │
+                    │ ResumeDB / Visitors      │
+                    └──────────────────────────┘
 
-Azure Services Used
-| Service                      | Purpose                                                |
-| ---------------------------- | ------------------------------------------------------ |
-| Azure Storage Static Website | Hosts the resume frontend                              |
-| Azure API Management         | Exposes and manages the visitor counter API            |
-| Azure Functions              | Serverless backend/API                                 |
-| Azure Cosmos DB for NoSQL    | Stores the visitor count                               |
-| Azure Managed Identity       | Passwordless authentication from Function to Cosmos DB |
-| Azure RBAC                   | Controls Cosmos DB data access                         |
-| Application Insights         | Application monitoring and telemetry                   |
-| Azure CLI                    | Deployment and cloud management                        |
-| Azure Functions Core Tools   | Local development and deployment                       |
 
-Visitor Counter Flow
+        ┌──────────────────────────────┐
+        │       Application Insights   │
+        │       Monitoring / Telemetry │
+        └──────────────▲───────────────┘
+                       │
+                    Function
+☁️ Azure Services Used
+Azure Service	Purpose
+Azure Storage Static Website	Hosts the resume frontend
+Azure API Management	Exposes and manages the visitor counter API
+Azure Functions	Serverless backend
+Azure Cosmos DB for NoSQL	Stores the visitor count
+Managed Identity	Passwordless authentication from Function to Cosmos DB
+Cosmos DB Data-Plane RBAC	Authorizes the Function to access the container
+Application Insights	Monitoring and telemetry
+GitHub Actions	CI/CD automation
+Azure CLI	Cloud management and deployment
+Azure Functions Core Tools	Local development and deployment
+🔄 Visitor Counter Flow
+
 When a visitor opens the website:
 
-The static website loads the HTML, CSS and JavaScript.
-script.js sends an HTTPS request to the API.
-Azure API Management receives the request.
+Azure Storage serves the HTML, CSS and JavaScript.
+script.js sends an HTTPS request to Azure API Management.
 API Management forwards the request to the Azure Function.
 The Function authenticates with Cosmos DB using its System-Assigned Managed Identity.
 Cosmos DB increments the visitor counter.
 The updated count is returned through the Function and API Management.
 JavaScript displays the updated count on the website.
-
 Website
    ↓
 API Management
@@ -97,12 +99,74 @@ Managed Identity
    ↓
 Cosmos DB
    ↓
-Updated visitor count
+Updated Count
    ↓
 Website
+🔐 Security
 
-Project Structure
+The project was initially implemented using a Cosmos DB key for authentication.
+
+The backend was later migrated to System-Assigned Managed Identity.
+
+The Function App receives an Azure-managed identity and uses Azure Identity authentication to connect to Cosmos DB.
+
+The Function's identity was granted:
+
+Cosmos DB Built-in Data Contributor
+
+at the required database/container scope.
+
+This provides:
+
+No Cosmos DB key in application code
+No database password stored in GitHub
+Secretless authentication between Azure services
+Least-privilege access at the Cosmos DB data-plane level
+
+Sensitive local configuration such as:
+
+backend/local.settings.json
+backend/node_modules/
+
+is excluded using .gitignore.
+
+🚀 CI/CD with GitHub Actions
+
+The backend is deployed automatically using GitHub Actions.
+
+Developer
+    │
+    │ git push
+    ▼
+GitHub main branch
+    │
+    ▼
+GitHub Actions
+    │
+    ├── Build
+    │
+    └── Deploy
+    │
+    ▼
+Azure Function App
+
+The workflow:
+
+Detects a push to main.
+Checks out the repository.
+Installs the Node.js dependencies from the backend project.
+Builds the deployment package.
+Authenticates with Azure using OIDC.
+Deploys the backend to the Azure Function App.
+
+The deployment workflow uses OIDC-based authentication rather than storing an Azure publish profile in GitHub.
+
+📁 Project Structure
 azure-cloud-resume/
+│
+├── .github/
+│   └── workflows/
+│       └── main_rg-resume.yml
 │
 ├── Frontend/
 │   ├── index.html
@@ -123,27 +187,33 @@ azure-cloud-resume/
 │
 ├── .gitignore
 └── README.md
-
-Technologies
+🧰 Technologies
+Frontend
 HTML5
 CSS3
 JavaScript
+Backend
 Node.js
 Azure Functions
-Azure Storage
 Azure API Management
 Azure Cosmos DB for NoSQL
-Azure Managed Identity
-Azure RBAC
+Cloud & Security
+Azure Storage
+Managed Identity
+Cosmos DB Data-Plane RBAC
 Application Insights
-Azure CLI
+DevOps
 Git
 GitHub
+GitHub Actions
+Azure CLI
+Azure Functions Core Tools
+🧪 Testing
 
-Testing
 The application was tested end-to-end using the live Azure deployment.
 
-The visitor counter successfully increments through:
+The visitor counter successfully follows this path:
+
 Live Website
      ↓
 API Management
@@ -153,59 +223,85 @@ Azure Function
 Managed Identity
      ↓
 Cosmos DB
+     ↓
+Updated Visitor Count
 
-Azure Front Door & DNS
+The GitHub Actions pipeline was also tested by pushing changes to the main branch.
 
-Azure Front Door was evaluated as the Azure equivalent of AWS CloudFront.
+The workflow successfully completed both:
 
-However, the Azure Free Trial/Student subscription used for this project does not permit Azure Front Door resources.
+Build ✅
+Deploy ✅
 
-Therefore, Front Door was not deployed and no subscription upgrade was performed just to enable it.
+The live website continued to update the visitor counter after deployment.
 
-Azure DNS was also not configured because a custom domain was not available for the project.
-
-The core application remains fully functional without these components.
-
-Challenges & Solutions
+🛠️ Challenges & Solutions
 1. Azure Functions deployment
 
 The Function initially encountered deployment and entry-point issues.
 
-Solution: The project structure and Node.js entry point were corrected, followed by deployment using Azure Functions Core Tools.
+Solution:
+The Node.js project structure and entry point were corrected, followed by deployment using Azure Functions Core Tools.
 
 2. API integration
 
 The frontend initially called the Function directly.
 
-Solution: Azure API Management was introduced between the frontend and Function to provide an API management layer.
+Solution:
+Azure API Management was introduced between the frontend and Function to provide an API management layer.
 
 3. CORS
 
 The browser initially blocked requests from the static website.
 
-Solution: The static website origin was added to the Function App's CORS configuration.
+Solution:
+The static website origin was added to the Function App CORS configuration.
 
-4. Cosmos DB security
+4. Cosmos DB authentication
 
 The initial implementation used a Cosmos DB key.
 
-Solution: The Function was migrated to System-Assigned Managed Identity and Cosmos DB data-plane RBAC.
+Solution:
+The Function was migrated to System-Assigned Managed Identity with a Cosmos DB built-in data-plane role.
 
-5. Subscription limitations
+5. GitHub Actions project path
 
-Azure Front Door could not be deployed because of the Free Trial/Student subscription restriction.
+The initial generated workflow attempted to run npm from the repository root even though the Function project was inside backend/.
 
-Solution: The service was documented as an unavailable architectural component rather than upgrading the subscription.
+Solution:
+The workflow was configured to use the backend directory as the Function App project path.
+
+6. Subscription limitations
+
+Azure Front Door could not be deployed because the Azure Free Trial/Student subscription used for this project does not permit Azure Front Door resources.
+
+Solution:
+The core application was completed without Front Door rather than upgrading the subscription solely for this component.
+
+⚠️ Current Limitations
+Azure Front Door
+
+Azure Front Door was evaluated as the Azure equivalent of AWS CloudFront.
+
+It was not deployed because the subscription used for this project does not permit Azure Front Door resources.
+
+Azure DNS
+
+Azure DNS was not configured because a custom domain was not available for the project.
+
+The application remains fully functional using the Azure Storage static website endpoint.
 
 📊 Results
 ✅ Live Azure resume website
 ✅ Serverless visitor counter
-✅ API Management integration
+✅ Azure API Management integration
 ✅ Cosmos DB persistence
 ✅ Managed Identity authentication
-✅ RBAC-based authorization
+✅ Cosmos DB data-plane authorization
 ✅ Application monitoring
 ✅ GitHub source control
+✅ GitHub Actions CI/CD
+✅ OIDC-based Azure authentication
 ✅ End-to-end cloud deployment
 🔮 Future Improvements
 
@@ -213,33 +309,39 @@ Possible future improvements include:
 
 Custom domain
 Azure Front Door/CDN when an eligible subscription is available
-CI/CD using GitHub Actions
+Frontend CI/CD for Azure Storage
 Infrastructure as Code using Bicep or Terraform
-Automated testing
-Custom monitoring dashboards
-Custom domain HTTPS configuration
+Automated unit/integration testing
+Custom Application Insights dashboards
+Additional API security policies
+Performance and cost optimization
+📚 What I Learned
 
-📌 What I Learned
+This project gave me practical experience with:
 
-This project helped me gain practical experience with:
-
-Deploying applications on Microsoft Azure
-Serverless application architecture
-Azure Functions
-REST API management
+Designing a serverless cloud architecture
+Deploying static websites on Azure
+Azure Functions and HTTP APIs
+API Management
 NoSQL databases
 Managed Identity
-Azure RBAC
+Cosmos DB data-plane authorization
 Application monitoring
-Cloud troubleshooting
-Azure CLI
+CORS configuration
 Git and GitHub
-Real-world cloud deployment and security
-
+GitHub Actions CI/CD
+OIDC authentication
+Azure CLI
+Azure Functions Core Tools
+Cloud troubleshooting
+Secure cloud deployment
 🌐 Live Demo
 
 Resume Website:
 https://rgresume.z29.web.core.windows.net/
+
+GitHub Repository:
+https://github.com/harshit26102/azure-cloud-resume
 
 👨‍💻 Author
 
